@@ -5,8 +5,44 @@ Views for the authentication system
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import UserSerializer
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from django.core.exceptions import PermissionDenied
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from .serializers import UserSerializer, LoginSerializer
 from .models import User
+
+
+class LoginViewSet(viewsets.ViewSet):
+    """
+    ViewSet for user login
+    """
+    permission_classes = [AllowAny]
+    serializer_class = LoginSerializer
+
+    def create(self, request):
+        """
+        Handle POST /login requests.
+
+        Authenticates a user and returns an access token.
+
+        Args:
+            request (Request): The incoming request.
+
+        Returns:
+            Response: A response containing the access token and user information.
+        """
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            token = AccessToken.for_user(user)
+            return Response({
+                'token': str(token),
+                'user_id': user.pk,
+                'email': user.email
+            })
+        else:
+            return Response({'error': 'Invalid credentials'}, status=401)
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -31,6 +67,32 @@ class UserViewSet(viewsets.ModelViewSet):
 
     queryset = User.objects.all()
     serializer_class = UserSerializer
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        """
+        Retrieves a single user object.
+
+        This method is overridden to add permission checks.
+
+        Returns:
+            User: The requested user object.
+
+        Raises:
+            PermissionDenied: If the requesting user does not have permission to access the requested user.
+        """
+        obj = super().get_object()
+        """
+        Get the user object using the parent class's implementation.
+        Check if the requesting user is not the same as the requested user and is not a superuser.
+        If the check fails, raise a PermissionDenied exception.
+        If the check passes, return the requested user object.
+        
+        """
+        if self.request.user != obj and not self.request.user.is_superuser:
+            raise PermissionDenied('No permission to access this user')
+        return obj
 
     def list(self, request):
         """

@@ -4,6 +4,44 @@ Serializers for the authentication system
 
 from rest_framework import serializers
 from .models import User
+from django.contrib.auth import authenticate
+
+
+class LoginSerializer(serializers.Serializer):
+    """
+    Serializer for user login
+
+    This serializer is used to validate user login credentials.
+    It includes fields for username and password.
+
+    Methods:
+        validate(data): Validate the login credentials.
+    """
+
+    # Define the fields to include in the serializer
+    username = serializers.CharField(max_length=255)
+    password = serializers.CharField(max_length=255, write_only=True)
+
+    def validate(self, data):
+        """
+        Validate the username and email uniqueness.
+
+        Args:
+            attrs (dict): The attributes to validate.
+
+        Returns:
+            dict: The validated attributes.
+
+        Raises:
+            serializers.ValidationError: If the username or password are wrong.
+        """
+        username = data.get('username')
+        password = data.get('password')
+        user = authenticate(username=username, password=password)
+        if user:
+            return {'user': user}
+        else:
+            raise serializers.ValidationError('Invalid credentials')
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -43,8 +81,7 @@ class UserSerializer(serializers.ModelSerializer):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.request = kwargs.get('context', {}).get('request')
-        self.user = self.request.user
+        context = self.context
 
     def create(self, validated_data):
         """
@@ -80,11 +117,13 @@ class UserSerializer(serializers.ModelSerializer):
         Raises:
             serializers.ValidationError: If the username or email already exists.
         """
-        if User.objects.filter(username=attrs['username']).exclude(id=attrs['id']).exists():
-            raise serializers.ValidationError("El nombre de usuario ya existe")
-        if User.objects.filter(email=attrs['email']).exclude(id=attrs['id']).exists():
-            raise serializers.ValidationError(
-                "El correo electrónico ya existe")
+        if 'id' in attrs:
+            if User.objects.filter(username=attrs['username']).exclude(id=attrs['id']).exists():
+                raise serializers.ValidationError(
+                    "El nombre de usuario ya existe")
+            if User.objects.filter(email=attrs['email']).exclude(id=attrs['id']).exists():
+                raise serializers.ValidationError(
+                    "El correo electrónico ya existe")
         return attrs
 
     def update(self, instance, validated_data):

@@ -15,8 +15,10 @@ Registers the UserViewSet with the router, using the basename 'users'.
 This will create the following URLs:
     - /users/ (GET, POST)
     - /users/{pk}/ (GET, PUT, PATCH, DELETE)
+    - /login/ (POST)
 """
 router.register(r'users', views.UserViewSet, basename='users')
+router.register(r'login', views.LoginViewSet, basename='login')
 
 
 """
