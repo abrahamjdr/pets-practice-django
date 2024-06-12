@@ -34,6 +34,9 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     'users',
+    'breed_of_pets',
+    'type_of_pet',
+    'pets',
     'rest_framework',
     'rest_framework_simplejwt',
     'django.contrib.admin',
