@@ -34,6 +34,4 @@ class Pets(models.Model):
     name = models.CharField(max_length=255, blank=False, null=False)
     owner = models.ForeignKey(
         User, on_delete=models.CASCADE)  # Relacion con users
-    type_of_pet = models.ForeignKey(
-        TypeOfPet, on_delete=models.CASCADE)  # Relación con TypeOfPet
     breed = models.ForeignKey(Breed, on_delete=models.CASCADE)
